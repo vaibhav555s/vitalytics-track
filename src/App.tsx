@@ -12,6 +12,10 @@ import AddReading from "./pages/AddReading";
 import Timeline from "./pages/Timeline";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
+import DoctorConnect from "./pages/DoctorConnect";
+import Chatbot from "./pages/Chatbot";
+import Goals from "./pages/Goals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +36,10 @@ const App = () => (
             <Route path="/timeline" element={<Timeline />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/doctor-connect" element={<DoctorConnect />} />
+            <Route path="/chatbot" element={<Chatbot />} />
+            <Route path="/goals" element={<Goals />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

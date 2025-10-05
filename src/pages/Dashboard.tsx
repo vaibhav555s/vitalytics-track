@@ -150,6 +150,36 @@ export default function Dashboard() {
                 ))}
               </div>
             </motion.div>
+
+            {/* Nutritional Tips Widget */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <Card className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-4">
+                  <div className="text-4xl">💡</div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold mb-2">Today's Health Tip</h3>
+                    <p className="text-sm">
+                      {[
+                        "Eat iron-rich foods like spinach, lentils, and red meat to boost hemoglobin.",
+                        "Vitamin C helps iron absorption. Pair iron-rich foods with citrus fruits.",
+                        "Stay hydrated! Drink at least 8 glasses of water daily.",
+                        "Regular exercise improves blood circulation and oxygen levels.",
+                        "Get enough sleep - 7-8 hours per night helps maintain healthy blood levels.",
+                        "Include folate-rich foods like beans and leafy greens in your diet.",
+                        "Avoid tea or coffee with meals as they can inhibit iron absorption.",
+                        "Consider iron supplements if recommended by your doctor.",
+                        "Cook in cast iron pots to naturally increase iron in your food.",
+                        "Regular health checkups help monitor your hemoglobin levels effectively."
+                      ][Math.floor(Math.random() * 10)]}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
           </div>
         </main>
       </div>

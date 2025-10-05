@@ -5,6 +5,8 @@ import {
   Calendar, 
   FileText, 
   UserPlus, 
+  MessageSquare,
+  Target,
   Settings as SettingsIcon 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,6 +16,8 @@ const navigation = [
   { name: "Add Reading", href: "/add-reading", icon: Plus },
   { name: "Timeline", href: "/timeline", icon: Calendar },
   { name: "Reports", href: "/reports", icon: FileText },
+  { name: "AI Chatbot", href: "/chatbot", icon: MessageSquare },
+  { name: "Goals", href: "/goals", icon: Target },
   { name: "Doctor Connect", href: "/doctor-connect", icon: UserPlus },
   { name: "Settings", href: "/settings", icon: SettingsIcon },
 ];

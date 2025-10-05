@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Activity } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,7 +14,11 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login - in real app, validate credentials
+    if (!email || !password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    toast.success("Welcome back!");
     navigate("/dashboard");
   };
 

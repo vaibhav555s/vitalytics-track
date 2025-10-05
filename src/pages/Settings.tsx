@@ -25,6 +25,8 @@ export default function Settings() {
   const [smartAlerts, setSmartAlerts] = useState(true);
   const [healthReminders, setHealthReminders] = useState(true);
   const [weeklyReports, setWeeklyReports] = useState(false);
+  const [lowThreshold, setLowThreshold] = useState("12.0");
+  const [criticalThreshold, setCriticalThreshold] = useState("10.0");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -130,6 +132,46 @@ export default function Settings() {
                       checked={weeklyReports}
                       onCheckedChange={setWeeklyReports}
                     />
+                  </div>
+                </div>
+
+                {/* Alert Thresholds */}
+                <div className="mt-6 pt-6 border-t space-y-4">
+                  <h3 className="font-semibold mb-4">Alert Thresholds</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="lowThreshold">Low Hemoglobin Alert (g/dL)</Label>
+                      <Input
+                        id="lowThreshold"
+                        type="number"
+                        step="0.1"
+                        value={lowThreshold}
+                        onChange={(e) => setLowThreshold(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        You'll be notified when your Hb falls below this value
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="criticalThreshold">Critical Alert (g/dL)</Label>
+                      <Input
+                        id="criticalThreshold"
+                        type="number"
+                        step="0.1"
+                        value={criticalThreshold}
+                        onChange={(e) => setCriticalThreshold(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Critical alerts require immediate attention
+                      </p>
+                    </div>
+                    <Button 
+                      variant="gradient" 
+                      className="w-full"
+                      onClick={() => toast.success("Alert thresholds updated successfully!")}
+                    >
+                      Save Thresholds
+                    </Button>
                   </div>
                 </div>
               </Card>

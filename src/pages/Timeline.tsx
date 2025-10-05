@@ -14,16 +14,24 @@ import {
 import { motion } from "framer-motion";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, QrCode, Download } from "lucide-react";
+import QRCode from "react-qr-code";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const mockReadings = [
-  { id: 1, date: "2025-01-15", time: "09:30 AM", value: 13.2, status: "normal", notes: "Feeling good today", hasReport: true },
-  { id: 2, date: "2025-01-10", time: "02:15 PM", value: 12.8, status: "normal", notes: "After lunch checkup", hasReport: false },
-  { id: 3, date: "2025-01-05", time: "08:00 AM", value: 11.5, status: "low", notes: "Feeling slightly tired", hasReport: true },
-  { id: 4, date: "2024-12-28", time: "10:45 AM", value: 13.5, status: "normal", notes: "Regular checkup", hasReport: false },
-  { id: 5, date: "2024-12-20", time: "03:30 PM", value: 14.1, status: "normal", notes: "Monthly test", hasReport: true },
-  { id: 6, date: "2024-12-15", time: "11:00 AM", value: 13.0, status: "normal", notes: "Routine check", hasReport: false },
-  { id: 7, date: "2024-12-08", time: "09:15 AM", value: 12.5, status: "low", notes: "Early morning test", hasReport: true },
+  { id: 1, date: "2025-01-15", time: "09:30 AM", value: 13.2, status: "normal", notes: "Feeling good today", hasReport: true, mood: "😊" },
+  { id: 2, date: "2025-01-10", time: "02:15 PM", value: 12.8, status: "normal", notes: "After lunch checkup", hasReport: false, mood: "🙂" },
+  { id: 3, date: "2025-01-05", time: "08:00 AM", value: 11.5, status: "low", notes: "Feeling slightly tired", hasReport: true, mood: "😟" },
+  { id: 4, date: "2024-12-28", time: "10:45 AM", value: 13.5, status: "normal", notes: "Regular checkup", hasReport: false, mood: "😊" },
+  { id: 5, date: "2024-12-20", time: "03:30 PM", value: 14.1, status: "normal", notes: "Monthly test", hasReport: true, mood: "😊" },
+  { id: 6, date: "2024-12-15", time: "11:00 AM", value: 13.0, status: "normal", notes: "Routine check", hasReport: false, mood: "🙂" },
+  { id: 7, date: "2024-12-08", time: "09:15 AM", value: 12.5, status: "low", notes: "Early morning test", hasReport: true, mood: "😐" },
 ];
 
 const getStatusColor = (status: string) => {
@@ -48,6 +56,7 @@ export default function Timeline() {
   const [date, setDate] = useState(new Date());
   const [filter, setFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [qrReading, setQrReading] = useState<typeof mockReadings[0] | null>(null);
 
   // Mark dates with readings
   const tileClassName = ({ date }: { date: Date }) => {
@@ -150,6 +159,7 @@ export default function Timeline() {
                               <div className="flex items-center gap-3">
                                 <p className="font-semibold">{reading.date}</p>
                                 <span className="text-sm text-muted-foreground">{reading.time}</span>
+                                {reading.mood && <span className="text-xl">{reading.mood}</span>}
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(reading.status)}`}>
                                   {reading.status.charAt(0).toUpperCase() + reading.status.slice(1)}
                                 </span>
@@ -177,9 +187,22 @@ export default function Timeline() {
                                     </div>
                                   </div>
                                 )}
-                                <Button variant="outline" size="sm" className="mt-3">
-                                  View Details
-                                </Button>
+                                <div className="flex gap-2 mt-3">
+                                  <Button variant="outline" size="sm">
+                                    View Details
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setQrReading(reading);
+                                    }}
+                                  >
+                                    <QrCode className="h-4 w-4 mr-1" />
+                                    Share via QR
+                                  </Button>
+                                </div>
                               </motion.div>
                             )}
                           </button>
@@ -195,6 +218,45 @@ export default function Timeline() {
       </div>
 
       <MobileNav />
+
+      {/* QR Code Modal */}
+      <Dialog open={!!qrReading} onOpenChange={() => setQrReading(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Reading via QR Code</DialogTitle>
+          </DialogHeader>
+          {qrReading && (
+            <div className="space-y-4">
+              <div className="flex justify-center p-6 bg-white rounded-lg">
+                <QRCode 
+                  value={JSON.stringify({
+                    date: qrReading.date,
+                    time: qrReading.time,
+                    value: qrReading.value,
+                    status: qrReading.status,
+                    notes: qrReading.notes
+                  })}
+                  size={200}
+                />
+              </div>
+              <p className="text-sm text-center text-muted-foreground">
+                Scan to view this report
+              </p>
+              <Button 
+                variant="gradient" 
+                className="w-full"
+                onClick={() => {
+                  toast.success("QR code downloaded!");
+                  setQrReading(null);
+                }}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download QR Code
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

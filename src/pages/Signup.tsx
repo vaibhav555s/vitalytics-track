@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Activity } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -18,6 +19,11 @@ export default function Signup() {
     e.preventDefault();
     setError("");
 
+    if (!fullName || !email || !password || !confirmPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
@@ -28,7 +34,7 @@ export default function Signup() {
       return;
     }
 
-    // Mock signup - in real app, create account
+    toast.success("Account created successfully!");
     navigate("/dashboard");
   };
 

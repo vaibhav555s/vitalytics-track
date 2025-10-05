@@ -27,6 +27,7 @@ export default function AddReading() {
   const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [mood, setMood] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -131,6 +132,34 @@ export default function AddReading() {
                         rows={3}
                       />
                     </div>
+
+                    {/* Mood Tracking */}
+                    <div className="space-y-3">
+                      <Label>How are you feeling today?</Label>
+                      <div className="flex gap-3 flex-wrap">
+                        {[
+                          { emoji: "😊", label: "Great", value: "great" },
+                          { emoji: "🙂", label: "Good", value: "good" },
+                          { emoji: "😐", label: "Okay", value: "okay" },
+                          { emoji: "😟", label: "Tired", value: "tired" },
+                          { emoji: "😢", label: "Unwell", value: "unwell" },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setMood(option.value)}
+                            className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                              mood === option.value
+                                ? "border-primary bg-primary/10"
+                                : "border-border hover:border-primary/50"
+                            }`}
+                          >
+                            <span className="text-3xl">{option.emoji}</span>
+                            <span className="text-xs font-medium">{option.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </Card>
 
@@ -161,12 +190,17 @@ export default function AddReading() {
                   </div>
                 </Card>
 
-                {/* Voice Input Section (Disabled) */}
-                <Card className="p-6 opacity-50">
+                {/* Voice Input Section */}
+                <Card className="p-6">
                   <h2 className="text-xl font-semibold mb-4">Voice Input</h2>
-                  <Button type="button" variant="outline" disabled className="w-full">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full hover:scale-105 transition-transform"
+                    onClick={() => toast.info("Voice input coming soon! Stay tuned.")}
+                  >
                     <Mic className="mr-2 h-4 w-4" />
-                    Or speak your reading (Coming Soon)
+                    Or speak your reading
                   </Button>
                 </Card>
 

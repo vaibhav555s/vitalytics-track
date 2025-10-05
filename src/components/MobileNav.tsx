@@ -3,7 +3,7 @@ import {
   LayoutDashboard, 
   Plus, 
   Calendar, 
-  User, 
+  FileText,
   Settings as SettingsIcon 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Add", href: "/add-reading", icon: Plus },
   { name: "Timeline", href: "/timeline", icon: Calendar },
-  { name: "Profile", href: "/profile", icon: User },
+  { name: "Reports", href: "/reports", icon: FileText },
   { name: "Settings", href: "/settings", icon: SettingsIcon },
 ];
 

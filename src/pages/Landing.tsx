@@ -99,8 +99,14 @@ export default function Landing() {
               <Button asChild variant="gradient" size="lg">
                 <Link to="/signup">Get Started</Link>
               </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link to="/login">Learn More</Link>
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => {
+                  document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Learn More
               </Button>
             </div>
           </motion.div>
@@ -108,7 +114,7 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4">
+      <section id="features-section" className="py-20 px-4">
         <div className="container mx-auto">
           <motion.div
             initial={{ opacity: 0 }}
