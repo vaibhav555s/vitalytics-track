@@ -6,16 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Activity } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -34,8 +37,24 @@ export default function Signup() {
       return;
     }
 
-    toast.success("Account created successfully!");
-    navigate("/dashboard");
+    setIsLoading(true);
+    try {
+      const { error } = await signUp(email, password, fullName);
+      if (error) {
+        if (error.message.includes("already registered")) {
+          setError("An account with this email already exists");
+        } else {
+          setError(error.message);
+        }
+        return;
+      }
+      toast.success("Account created successfully!");
+      navigate("/dashboard");
+    } catch (err) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -112,8 +131,14 @@ export default function Signup() {
               <p className="text-sm text-destructive">{error}</p>
             )}
 
-            <Button type="submit" variant="gradient" size="lg" className="w-full">
-              Sign Up
+            <Button 
+              type="submit" 
+              variant="gradient" 
+              size="lg" 
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating account..." : "Sign Up"}
             </Button>
           </form>
 

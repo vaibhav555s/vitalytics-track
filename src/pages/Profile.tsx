@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
@@ -17,18 +17,80 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Camera } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Profile() {
-  const [name, setName] = useState("John Doe");
-  const [age, setAge] = useState("32");
-  const [gender, setGender] = useState("male");
-  const [bloodType, setBloodType] = useState("O+");
-  const [email] = useState("john.doe@example.com");
+  const { user } = useAuth();
+  const { data: profile, isLoading } = useProfile();
+  const updateProfile = useUpdateProfile();
+  
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [bloodType, setBloodType] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (profile) {
+      setName(profile.full_name || "");
+      setAge(profile.age?.toString() || "");
+      setGender(profile.gender || "");
+      setBloodType(profile.blood_type || "");
+    }
+  }, [profile]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Profile updated successfully!");
+    setIsSaving(true);
+    
+    try {
+      await updateProfile.mutateAsync({
+        full_name: name,
+        age: age ? parseInt(age) : undefined,
+        gender: gender || undefined,
+        blood_type: bloodType || undefined,
+      });
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const getInitials = () => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return user?.email?.slice(0, 2).toUpperCase() || 'U';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex flex-1">
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
+            <div className="container mx-auto px-4 py-8 max-w-2xl">
+              <Skeleton className="h-8 w-48 mb-8" />
+              <Card className="p-8">
+                <Skeleton className="h-32 w-32 rounded-full mx-auto mb-6" />
+                <div className="space-y-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              </Card>
+            </div>
+          </main>
+        </div>
+        <MobileNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -54,7 +116,7 @@ export default function Profile() {
                     <div className="relative">
                       <Avatar className="h-32 w-32 border-4 border-primary/20">
                         <AvatarFallback className="gradient-primary text-white text-3xl">
-                          JD
+                          {getInitials()}
                         </AvatarFallback>
                       </Avatar>
                       <button
@@ -77,7 +139,7 @@ export default function Profile() {
                         id="name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        required
+                        placeholder="Enter your full name"
                       />
                     </div>
 
@@ -89,7 +151,7 @@ export default function Profile() {
                           type="number"
                           value={age}
                           onChange={(e) => setAge(e.target.value)}
-                          required
+                          placeholder="Enter your age"
                         />
                       </div>
 
@@ -97,12 +159,12 @@ export default function Profile() {
                         <Label htmlFor="gender">Gender</Label>
                         <Select value={gender} onValueChange={setGender}>
                           <SelectTrigger id="gender">
-                            <SelectValue />
+                            <SelectValue placeholder="Select gender" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -112,7 +174,7 @@ export default function Profile() {
                       <Label htmlFor="bloodType">Blood Type</Label>
                       <Select value={bloodType} onValueChange={setBloodType}>
                         <SelectTrigger id="bloodType">
-                          <SelectValue />
+                          <SelectValue placeholder="Select blood type" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="A+">A+</SelectItem>
@@ -132,7 +194,7 @@ export default function Profile() {
                       <Input
                         id="email"
                         type="email"
-                        value={email}
+                        value={user?.email || ""}
                         disabled
                         className="bg-muted cursor-not-allowed"
                       />
@@ -142,8 +204,14 @@ export default function Profile() {
                     </div>
                   </div>
 
-                  <Button type="submit" variant="gradient" size="lg" className="w-full">
-                    Save Changes
+                  <Button 
+                    type="submit" 
+                    variant="gradient" 
+                    size="lg" 
+                    className="w-full"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save Changes"}
                   </Button>
                 </form>
               </Card>

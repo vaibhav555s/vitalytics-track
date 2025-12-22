@@ -1,77 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Send } from "lucide-react";
+import { MessageSquare, Send, Plus, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-type Message = {
-  id: number;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-};
-
-const mockConversations = [
-  { id: 1, title: "Improving hemoglobin levels", date: "Jan 15, 2025" },
-  { id: 2, title: "Iron-rich food suggestions", date: "Jan 12, 2025" },
-  { id: 3, title: "Understanding my test results", date: "Jan 08, 2025" },
-];
-
-const initialMessages: Message[] = [
-  {
-    id: 1,
-    role: "assistant",
-    content: "Hello! I'm your AI health assistant. How can I help you today?",
-    timestamp: new Date(),
-  },
-];
+import { toast } from "sonner";
+import { useConversations, useMessages, useChatbot } from "@/hooks/useChatbot";
 
 export default function Chatbot() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const { data: conversations } = useConversations();
+  const { isLoading, currentConversationId, setCurrentConversationId, createConversation, sendMessage } = useChatbot();
+  const { data: messages } = useMessages(currentConversationId);
   const [input, setInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
-    const userMessage: Message = {
-      id: messages.length + 1,
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    };
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
 
-    setMessages([...messages, userMessage]);
+    const messageText = input;
     setInput("");
 
-    // Mock AI response
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: messages.length + 2,
-        role: "assistant",
-        content: getAIResponse(input),
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
+    try {
+      let convId = currentConversationId;
+      if (!convId) {
+        convId = await createConversation();
+      }
+
+      await sendMessage(messageText, convId, messages || []);
+    } catch (error) {
+      toast.error("Failed to send message. Please try again.");
+    }
   };
 
-  const getAIResponse = (userInput: string): string => {
-    const lowerInput = userInput.toLowerCase();
-    
-    if (lowerInput.includes("hemoglobin") || lowerInput.includes("improve")) {
-      return "Foods rich in iron like spinach, lentils, red meat, and fortified cereals can help improve hemoglobin levels. Also, vitamin C helps with iron absorption, so pair iron-rich foods with citrus fruits. Would you like more specific dietary recommendations?";
-    } else if (lowerInput.includes("food") || lowerInput.includes("eat")) {
-      return "For better hemoglobin levels, I recommend: 1) Leafy greens (spinach, kale), 2) Legumes (lentils, chickpeas), 3) Red meat and poultry, 4) Fortified cereals, 5) Nuts and seeds. Don't forget to stay hydrated!";
-    } else if (lowerInput.includes("exercise") || lowerInput.includes("workout")) {
-      return "Regular moderate exercise like walking, swimming, or yoga can help improve blood circulation and overall health. Aim for at least 30 minutes of activity most days of the week. Remember to consult your doctor before starting any new exercise routine.";
-    } else {
-      return "I'm here to help with your health questions! Feel free to ask me about nutrition, hemoglobin levels, lifestyle tips, or any health-related concerns you may have.";
-    }
+  const handleNewChat = async () => {
+    const convId = await createConversation();
+    setCurrentConversationId(convId);
   };
 
   return (
@@ -84,30 +57,49 @@ export default function Chatbot() {
         <div className="flex-1 flex overflow-hidden">
           {/* Chat History Sidebar */}
           <aside className="hidden lg:flex lg:w-64 border-r bg-card/50 flex-col">
-            <div className="p-4 border-b">
+            <div className="p-4 border-b flex items-center justify-between">
               <h2 className="font-semibold">Chat History</h2>
+              <Button variant="ghost" size="icon" onClick={handleNewChat}>
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-1">
-                {mockConversations.map((conv) => (
+                {conversations?.map((conv) => (
                   <button
                     key={conv.id}
-                    className="w-full text-left p-3 rounded-lg hover:bg-accent transition-colors"
+                    onClick={() => setCurrentConversationId(conv.id)}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      currentConversationId === conv.id ? 'bg-primary/10' : 'hover:bg-accent'
+                    }`}
                   >
                     <p className="font-medium text-sm truncate">{conv.title}</p>
-                    <p className="text-xs text-muted-foreground">{conv.date}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(conv.created_at).toLocaleDateString()}
+                    </p>
                   </button>
                 ))}
+                {(!conversations || conversations.length === 0) && (
+                  <p className="text-sm text-muted-foreground p-3">No conversations yet</p>
+                )}
               </div>
             </ScrollArea>
           </aside>
 
           {/* Main Chat Area */}
           <main className="flex-1 flex flex-col pb-20 md:pb-0">
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
+            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               <div className="max-w-3xl mx-auto space-y-4">
-                {messages.map((message, index) => (
+                {!currentConversationId && (
+                  <div className="text-center py-12">
+                    <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">AI Health Assistant</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Ask me anything about hemoglobin, nutrition, or blood health!
+                    </p>
+                  </div>
+                )}
+                {messages?.map((message, index) => (
                   <motion.div
                     key={message.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -115,13 +107,9 @@ export default function Chatbot() {
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    <Card
-                      className={`max-w-[80%] p-4 ${
-                        message.role === "user"
-                          ? "gradient-primary text-white"
-                          : "bg-card"
-                      }`}
-                    >
+                    <Card className={`max-w-[80%] p-4 ${
+                      message.role === "user" ? "gradient-primary text-white" : "bg-card"
+                    }`}>
                       <div className="flex items-start gap-3">
                         {message.role === "assistant" && (
                           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -129,52 +117,51 @@ export default function Chatbot() {
                           </div>
                         )}
                         <div className="flex-1">
-                          <p className={`text-sm ${message.role === "user" ? "text-white" : ""}`}>
+                          <p className={`text-sm whitespace-pre-wrap ${message.role === "user" ? "text-white" : ""}`}>
                             {message.content}
-                          </p>
-                          <p
-                            className={`text-xs mt-2 ${
-                              message.role === "user" ? "text-white/70" : "text-muted-foreground"
-                            }`}
-                          >
-                            {message.timestamp.toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
                           </p>
                         </div>
                       </div>
                     </Card>
                   </motion.div>
                 ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <Card className="p-4 bg-card">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground">Thinking...</span>
+                      </div>
+                    </Card>
+                  </div>
+                )}
               </div>
             </ScrollArea>
 
-            {/* Input Area */}
             <div className="border-t bg-card/50 p-4">
-              <div className="max-w-3xl mx-auto">
-                <div className="flex gap-2">
-                  <Textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder="Type your health question here..."
-                    className="min-h-[60px] resize-none"
-                  />
-                  <Button
-                    variant="gradient"
-                    size="icon"
-                    onClick={handleSend}
-                    className="h-[60px] w-[60px] flex-shrink-0"
-                  >
-                    <Send className="h-5 w-5" />
-                  </Button>
-                </div>
+              <div className="max-w-3xl mx-auto flex gap-2">
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Ask about hemoglobin, nutrition, or blood health..."
+                  className="min-h-[60px] resize-none"
+                  disabled={isLoading}
+                />
+                <Button
+                  variant="gradient"
+                  size="icon"
+                  onClick={handleSend}
+                  className="h-[60px] w-[60px] flex-shrink-0"
+                  disabled={isLoading || !input.trim()}
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
               </div>
             </div>
           </main>

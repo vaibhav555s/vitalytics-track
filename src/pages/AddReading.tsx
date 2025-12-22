@@ -18,9 +18,11 @@ import {
 import { Upload, Mic } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useAddReading } from "@/hooks/useReadings";
 
 export default function AddReading() {
   const navigate = useNavigate();
+  const addReading = useAddReading();
   const [value, setValue] = useState("");
   const [unit, setUnit] = useState("g/dL");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -28,6 +30,7 @@ export default function AddReading() {
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [mood, setMood] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -35,7 +38,7 @@ export default function AddReading() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!value) {
@@ -43,10 +46,30 @@ export default function AddReading() {
       return;
     }
 
-    toast.success("Reading saved successfully!");
-    setTimeout(() => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue <= 0 || numValue > 25) {
+      toast.error("Please enter a valid hemoglobin value (0-25 g/dL)");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await addReading.mutateAsync({
+        value: numValue,
+        unit,
+        reading_date: date,
+        reading_time: time,
+        notes: notes || undefined,
+        mood: mood || undefined,
+      });
+
+      toast.success("Reading saved successfully!");
       navigate("/dashboard");
-    }, 1000);
+    } catch (error) {
+      toast.error("Failed to save reading. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -205,8 +228,14 @@ export default function AddReading() {
                 </Card>
 
                 {/* Submit Button */}
-                <Button type="submit" variant="gradient" size="lg" className="w-full">
-                  Save Reading
+                <Button 
+                  type="submit" 
+                  variant="gradient" 
+                  size="lg" 
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Saving..." : "Save Reading"}
                 </Button>
               </form>
             </motion.div>
