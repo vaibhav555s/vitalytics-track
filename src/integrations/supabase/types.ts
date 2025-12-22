@@ -14,7 +14,292 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alert_settings: {
+        Row: {
+          critical_threshold: number | null
+          health_reminders_enabled: boolean | null
+          id: string
+          low_threshold: number | null
+          smart_alerts_enabled: boolean | null
+          updated_at: string
+          user_id: string
+          weekly_reports_enabled: boolean | null
+        }
+        Insert: {
+          critical_threshold?: number | null
+          health_reminders_enabled?: boolean | null
+          id?: string
+          low_threshold?: number | null
+          smart_alerts_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+          weekly_reports_enabled?: boolean | null
+        }
+        Update: {
+          critical_threshold?: number | null
+          health_reminders_enabled?: boolean | null
+          id?: string
+          low_threshold?: number | null
+          smart_alerts_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+          weekly_reports_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      badges: {
+        Row: {
+          badge_type: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_type: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_type?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doctors: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          specialization: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          specialization?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          specialization?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          created_at: string
+          current_count: number | null
+          goal_type: string | null
+          id: string
+          is_active: boolean | null
+          target_count: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_count?: number | null
+          goal_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          target_count?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_count?: number | null
+          goal_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          target_count?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          avatar_url: string | null
+          blood_type: string | null
+          created_at: string
+          full_name: string | null
+          gender: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string | null
+          blood_type?: string | null
+          created_at?: string
+          full_name?: string | null
+          gender?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string | null
+          blood_type?: string | null
+          created_at?: string
+          full_name?: string | null
+          gender?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      readings: {
+        Row: {
+          created_at: string
+          id: string
+          mood: string | null
+          notes: string | null
+          reading_date: string
+          reading_time: string
+          status: string | null
+          unit: string | null
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood?: string | null
+          notes?: string | null
+          reading_date?: string
+          reading_time?: string
+          status?: string | null
+          unit?: string | null
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood?: string | null
+          notes?: string | null
+          reading_date?: string
+          reading_time?: string
+          status?: string | null
+          unit?: string | null
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          file_name: string | null
+          file_url: string
+          id: string
+          reading_id: string | null
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          file_name?: string | null
+          file_url: string
+          id?: string
+          reading_id?: string | null
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          file_name?: string | null
+          file_url?: string
+          id?: string
+          reading_id?: string | null
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_reading_id_fkey"
+            columns: ["reading_id"]
+            isOneToOne: false
+            referencedRelation: "readings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
