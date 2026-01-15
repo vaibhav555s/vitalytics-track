@@ -66,7 +66,7 @@ export default function Reports() {
     try {
       await uploadReport.mutateAsync({
         file,
-        readingId: selectedReadingId || undefined,
+        readingId: selectedReadingId && selectedReadingId !== "none" ? selectedReadingId : undefined,
       });
       toast({
         title: "Report uploaded",
@@ -135,7 +135,7 @@ export default function Reports() {
                       <SelectValue placeholder="Link to reading (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No reading</SelectItem>
+                      <SelectItem value="none">No reading</SelectItem>
                       {readings.map((reading) => (
                         <SelectItem key={reading.id} value={reading.id}>
                           {format(new Date(reading.reading_date), "MMM d, yyyy")} - {reading.value} {reading.unit}
