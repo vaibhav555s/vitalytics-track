@@ -48,10 +48,16 @@ export function useUpdateAlertSettings() {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
+      // Use upsert to create settings if they don't exist
       const { data, error } = await supabase
         .from("alert_settings")
-        .update(updates)
-        .eq("user_id", user.id)
+        .upsert({
+          user_id: user.id,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: "user_id",
+        })
         .select()
         .single();
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/ThemeProvider";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useAlertSettings, useUpdateAlertSettings } from "@/hooks/useAlertSettings";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +25,9 @@ import {
 
 export default function Settings() {
   const { theme, setTheme } = useTheme();
+  const { data: alertSettings, isLoading } = useAlertSettings();
+  const updateSettings = useUpdateAlertSettings();
+  
   const [smartAlerts, setSmartAlerts] = useState(true);
   const [healthReminders, setHealthReminders] = useState(true);
   const [weeklyReports, setWeeklyReports] = useState(false);
@@ -30,9 +36,68 @@ export default function Settings() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  // Sync local state with database values
+  useEffect(() => {
+    if (alertSettings) {
+      setSmartAlerts(alertSettings.smart_alerts_enabled ?? true);
+      setHealthReminders(alertSettings.health_reminders_enabled ?? true);
+      setWeeklyReports(alertSettings.weekly_reports_enabled ?? false);
+      setLowThreshold(String(alertSettings.low_threshold ?? 12.0));
+      setCriticalThreshold(String(alertSettings.critical_threshold ?? 10.0));
+    }
+  }, [alertSettings]);
+
+  const handleToggleChange = async (
+    field: "smart_alerts_enabled" | "health_reminders_enabled" | "weekly_reports_enabled",
+    value: boolean
+  ) => {
+    // Update local state immediately for responsiveness
+    if (field === "smart_alerts_enabled") setSmartAlerts(value);
+    if (field === "health_reminders_enabled") setHealthReminders(value);
+    if (field === "weekly_reports_enabled") setWeeklyReports(value);
+
+    try {
+      await updateSettings.mutateAsync({ [field]: value });
+    } catch (error) {
+      // Revert on error
+      if (field === "smart_alerts_enabled") setSmartAlerts(!value);
+      if (field === "health_reminders_enabled") setHealthReminders(!value);
+      if (field === "weekly_reports_enabled") setWeeklyReports(!value);
+      toast.error("Failed to update setting");
+    }
+  };
+
+  const handleSaveThresholds = async () => {
+    const low = parseFloat(lowThreshold);
+    const critical = parseFloat(criticalThreshold);
+
+    if (isNaN(low) || isNaN(critical)) {
+      toast.error("Please enter valid numbers");
+      return;
+    }
+
+    if (critical >= low) {
+      toast.error("Critical threshold must be lower than low threshold");
+      return;
+    }
+
+    try {
+      await updateSettings.mutateAsync({
+        low_threshold: low,
+        critical_threshold: critical,
+      });
+      toast.success("Alert thresholds updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update thresholds");
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (newPassword !== confirmPassword) {
       toast.error("New passwords do not match");
       return;
@@ -41,10 +106,25 @@ export default function Settings() {
       toast.error("Password must be at least 8 characters");
       return;
     }
-    toast.success("Password changed successfully!");
-    setOldPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+
+    setIsChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password changed successfully!");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to change password");
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   return (
@@ -94,92 +174,125 @@ export default function Settings() {
               {/* Notifications */}
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Notifications</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Smart Alerts</p>
-                      <p className="text-sm text-muted-foreground">
-                        Get notified about important health changes
-                      </p>
-                    </div>
-                    <Switch
-                      checked={smartAlerts}
-                      onCheckedChange={setSmartAlerts}
-                    />
+                {isLoading ? (
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-48" />
+                        </div>
+                        <Skeleton className="h-6 w-11 rounded-full" />
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Smart Alerts</p>
+                        <p className="text-sm text-muted-foreground">
+                          Get notified about important health changes
+                        </p>
+                      </div>
+                      <Switch
+                        checked={smartAlerts}
+                        onCheckedChange={(value) => handleToggleChange("smart_alerts_enabled", value)}
+                        disabled={updateSettings.isPending}
+                      />
+                    </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Health Reminders</p>
-                      <p className="text-sm text-muted-foreground">
-                        Reminders to log your readings
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Health Reminders</p>
+                        <p className="text-sm text-muted-foreground">
+                          Reminders to log your readings
+                        </p>
+                      </div>
+                      <Switch
+                        checked={healthReminders}
+                        onCheckedChange={(value) => handleToggleChange("health_reminders_enabled", value)}
+                        disabled={updateSettings.isPending}
+                      />
                     </div>
-                    <Switch
-                      checked={healthReminders}
-                      onCheckedChange={setHealthReminders}
-                    />
-                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Weekly Reports</p>
-                      <p className="text-sm text-muted-foreground">
-                        Receive weekly health summaries
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Weekly Reports</p>
+                        <p className="text-sm text-muted-foreground">
+                          Receive weekly health summaries
+                        </p>
+                      </div>
+                      <Switch
+                        checked={weeklyReports}
+                        onCheckedChange={(value) => handleToggleChange("weekly_reports_enabled", value)}
+                        disabled={updateSettings.isPending}
+                      />
                     </div>
-                    <Switch
-                      checked={weeklyReports}
-                      onCheckedChange={setWeeklyReports}
-                    />
                   </div>
-                </div>
+                )}
 
                 {/* Alert Thresholds */}
                 <div className="mt-6 pt-6 border-t space-y-4">
                   <h3 className="font-semibold mb-4">Alert Thresholds</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="lowThreshold">Low Hemoglobin Alert (g/dL)</Label>
-                      <Input
-                        id="lowThreshold"
-                        type="number"
-                        step="0.1"
-                        value={lowThreshold}
-                        onChange={(e) => setLowThreshold(e.target.value)}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        You'll be notified when your Hb falls below this value
-                      </p>
+                  {isLoading ? (
+                    <div className="space-y-4">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="criticalThreshold">Critical Alert (g/dL)</Label>
-                      <Input
-                        id="criticalThreshold"
-                        type="number"
-                        step="0.1"
-                        value={criticalThreshold}
-                        onChange={(e) => setCriticalThreshold(e.target.value)}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Critical alerts require immediate attention
-                      </p>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="lowThreshold">Low Hemoglobin Alert (g/dL)</Label>
+                        <Input
+                          id="lowThreshold"
+                          type="number"
+                          step="0.1"
+                          value={lowThreshold}
+                          onChange={(e) => setLowThreshold(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          You'll be notified when your Hb falls below this value
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="criticalThreshold">Critical Alert (g/dL)</Label>
+                        <Input
+                          id="criticalThreshold"
+                          type="number"
+                          step="0.1"
+                          value={criticalThreshold}
+                          onChange={(e) => setCriticalThreshold(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Critical alerts require immediate attention
+                        </p>
+                      </div>
+                      <Button 
+                        variant="gradient" 
+                        className="w-full"
+                        onClick={handleSaveThresholds}
+                        disabled={updateSettings.isPending}
+                      >
+                        {updateSettings.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Thresholds"
+                        )}
+                      </Button>
                     </div>
-                    <Button 
-                      variant="gradient" 
-                      className="w-full"
-                      onClick={() => toast.success("Alert thresholds updated successfully!")}
-                    >
-                      Save Thresholds
-                    </Button>
-                  </div>
+                  )}
                 </div>
               </Card>
 
               {/* Account Security */}
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Account Security</h2>
-                <Dialog>
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="w-full">
                       Change Password
@@ -189,20 +302,10 @@ export default function Settings() {
                     <DialogHeader>
                       <DialogTitle>Change Password</DialogTitle>
                       <DialogDescription>
-                        Enter your current password and choose a new one
+                        Choose a new password for your account
                       </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handlePasswordChange} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="oldPassword">Current Password</Label>
-                        <Input
-                          id="oldPassword"
-                          type="password"
-                          value={oldPassword}
-                          onChange={(e) => setOldPassword(e.target.value)}
-                          required
-                        />
-                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="newPassword">New Password</Label>
                         <Input
@@ -211,6 +314,7 @@ export default function Settings() {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           required
+                          minLength={8}
                         />
                       </div>
                       <div className="space-y-2">
@@ -221,10 +325,23 @@ export default function Settings() {
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           required
+                          minLength={8}
                         />
                       </div>
-                      <Button type="submit" variant="gradient" className="w-full">
-                        Update Password
+                      <Button 
+                        type="submit" 
+                        variant="gradient" 
+                        className="w-full"
+                        disabled={isChangingPassword}
+                      >
+                        {isChangingPassword ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          "Update Password"
+                        )}
                       </Button>
                     </form>
                   </DialogContent>
